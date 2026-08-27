@@ -1,0 +1,8 @@
+PLACE_YOUR_LEVELS_SCREEN_IMAGE_HERE
+
+This repository commit adds a Levels page (levels.html) which expects the full artwork image
+at: assets/ui/levels_screen.jpg
+
+Please add your Levels screen image file (JPG/PNG) to that exact path so the page displays properly.
+
+If you prefer, upload the image at GitHub using the web UI: go to repository -> Add file -> Upload files and place it at assets/ui/levels_screen.jpg

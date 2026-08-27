@@ -1,0 +1,39 @@
+/* Minimal, page-specific tweaks */
+
+html,body { height:100%; background: #03040a; margin:0; }
+#levels-root { width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; }
+
+.levels-frame {
+  width: min(94vw, 141vh);
+  height: min(94vh, 62.667vw);
+  position: relative;
+}
+
+/* make the hotspots invisible but keyboard-focusable and with a visible focus ring */
+.frame-hotspot {
+  background: transparent;
+  border: none;
+  padding: 0;
+  position: absolute;
+  cursor: pointer;
+  outline: none;
+}
+.frame-hotspot:focus {
+  box-shadow: 0 0 0 3px rgba(0,200,255,0.18), 0 8px 20px rgba(0,0,0,0.6);
+}
+
+/* optional visual for debug during development (disabled by default) */
+.planet-hotspot.debug {
+  background: rgba(255,0,0,0.12);
+  border-radius: 8px;
+}
+
+/* make the Back/Settings labels visually hidden since the art already shows them */
+#btn-back, #btn-settings, #btn-upgrade { color: transparent; }
+
+/* Responsive touch targets: ensure at least 44x44 on small screens */
+@media (max-width:480px) {
+  .frame-hotspot {
+    min-width:44px; min-height:44px;
+  }
+}
