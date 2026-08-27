@@ -15,9 +15,28 @@
 
   function adjustHotspotsForWrapper(wrapper) {
     const img = wrapper.querySelector('img');
-    if (!img) return;
-    const w = img.clientWidth;
-    const h = img.clientHeight;
+
+    // Robust width/height calculation:
+    // - prefer the rendered image size if it successfully loaded
+    // - otherwise fall back to the wrapper's client size so hotspots can still be positioned
+    let w = 0, h = 0;
+    try {
+      if (img && img.complete && img.naturalWidth && img.naturalWidth > 0) {
+        // image loaded normally
+        w = img.clientWidth;
+        h = img.clientHeight;
+      } else {
+        // fallback: use frame wrapper size (so hotspots still map to the visual frame area)
+        const rect = wrapper.getBoundingClientRect();
+        w = Math.round(rect.width);
+        h = Math.round(rect.height);
+      }
+    } catch (e) {
+      const rect = wrapper.getBoundingClientRect();
+      w = Math.round(rect.width);
+      h = Math.round(rect.height);
+    }
+
     if (!w || !h) return;
 
     const hotspots = wrapper.querySelectorAll('.frame-hotspot, .title-hotspot');
@@ -74,8 +93,10 @@
     document.querySelectorAll('.frame-photo-wrap img').forEach(img => {
       if (img.__hotspot_bound) return;
       img.__hotspot_bound = true;
-      if (img.complete) adjustHotspotsForWrapper(img.closest('.frame-photo-wrap'));
+      if (img.complete && img.naturalWidth && img.naturalWidth > 0) adjustHotspotsForWrapper(img.closest('.frame-photo-wrap'));
       else img.addEventListener('load', () => adjustHotspotsForWrapper(img.closest('.frame-photo-wrap')));
+      // Also handle error cases (image broken) by triggering a layout
+      img.addEventListener('error', () => adjustHotspotsForWrapper(img.closest('.frame-photo-wrap')));
     });
   };
   observeImages();
