@@ -1,28 +1,112 @@
 // levels.js
-// Binds the hotspots on the standalone levels.html page.
+// Binds the hotspots on the standalone levels.html page and positions
+// percentage-based hotspots to pixel-accurate locations for the displayed image.
 //
 // Behavior:
 // - If the page was opened by the main game window (window.opener) and that window
 //   exposes a startLevel(levelNumber) function, clicking a planet will call it.
 // - Otherwise clicking logs to console and shows an in-page toast message.
 
+// ---------------------- init & positioning helper ----------------------
+function initLevelsPage(imagePath) {
+  const img = document.getElementById('levels-art');
+  if (!img) return;
+
+  // Percent coordinates for hotspots relative to the image (0..100)
+  const hotspotsPercent = {
+    'btn-back':            { left: 2.2,  top: 3.9,  width: 11.5, height: 9.5  },
+    'btn-settings':        { left: 80.8, top: 3.9,  width: 9.5,  height: 12.0 },
+    'btn-upgrade':         { left: 91.0, top: 3.9,  width: 7.5,  height: 12.0 },
+
+    'level-1':             { left: 7.6,  top: 21.0, width: 20.6, height: 31.0 },
+    'level-2':             { left: 31.8, top: 21.0, width: 20.6, height: 31.0 },
+    'level-3':             { left: 56.0, top: 21.0, width: 20.6, height: 31.0 },
+    'level-4':             { left: 79.6, top: 21.0, width: 16.8, height: 31.0 },
+
+    'level-5':             { left: 7.6,  top: 55.0, width: 20.6, height: 31.0 },
+    'level-6':             { left: 31.8, top: 55.0, width: 20.6, height: 31.0 },
+    'level-7':             { left: 56.0, top: 55.0, width: 20.6, height: 31.0 },
+    'level-8':             { left: 79.6, top: 55.0, width: 16.8, height: 31.0 },
+
+    'btn-collect-stars':   { left: 29.5, top: 88.0, width: 40.0, height: 8.5 },
+  };
+
+  const encodedPath = encodeURI(imagePath);
+  img.src = encodedPath;
+
+  function debounce(fn, wait) {
+    let t;
+    return function () { clearTimeout(t); t = setTimeout(() => fn.apply(this, arguments), wait); };
+  }
+
+  function updateAllHotspots() {
+    const wrapper = img.closest('.frame-photo-wrap') || document.body;
+    const imgRect = img.getBoundingClientRect();
+    const wrapRect = wrapper.getBoundingClientRect();
+    if (!imgRect.width || !imgRect.height) return;
+
+    Object.keys(hotspotsPercent).forEach(id => {
+      const pct = hotspotsPercent[id];
+      const el = document.getElementById(id);
+      if (!el) return;
+      const leftPx  = Math.round((pct.left  / 100) * imgRect.width);
+      const topPx   = Math.round((pct.top   / 100) * imgRect.height);
+      const wPx     = Math.round((pct.width / 100) * imgRect.width);
+      const hPx     = Math.round((pct.height/ 100) * imgRect.height);
+
+      const leftRel = Math.round(imgRect.left - wrapRect.left) + leftPx;
+      const topRel  = Math.round(imgRect.top  - wrapRect.top)  + topPx;
+
+      el.style.position = 'absolute';
+      el.style.left = leftRel + 'px';
+      el.style.top = topRel + 'px';
+      el.style.width = Math.max(44, wPx) + 'px';
+      el.style.height = Math.max(44, hPx) + 'px';
+      el.style.display = 'block';
+      el.style.transform = 'none';
+      el.style.padding = '0';
+      el.style.boxSizing = 'border-box';
+    });
+  }
+
+  function onImageReady() {
+    const wrapper = img.closest('.frame-photo-wrap') || document.body;
+    if (wrapper && getComputedStyle(wrapper).position === 'static') wrapper.style.position = 'relative';
+
+    // initial update
+    updateAllHotspots();
+
+    // reflow on resize and when wrapper changes
+    window.addEventListener('resize', debounce(updateAllHotspots, 80), { passive: true });
+    const mo = new MutationObserver(debounce(updateAllHotspots, 40));
+    mo.observe(wrapper, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+  }
+
+  if (img.complete && img.naturalWidth) setTimeout(onImageReady, 20);
+  else img.addEventListener('load', onImageReady, { once: true });
+  img.addEventListener('error', () => console.error('Failed to load levels image:', encodedPath), { once: true });
+}
+
+// Call initLevelsPage automatically on DOM ready with the image path you added
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => {
+  initLevelsPage('assets/levels/WhatsApp Image 2026-08-16 at 4.53.45 PM.jpeg');
+});
+else initLevelsPage('assets/levels/WhatsApp Image 2026-08-16 at 4.53.45 PM.jpeg');
+
+// ---------------------- existing binding & fallback logic ----------------------
 (function () {
   function callGameStart(level) {
     // If the page is opened by the main app (popup or new window), prefer calling its startLevel
     try {
       if (window.opener && typeof window.opener.startLevel === 'function') {
         window.opener.startLevel(level);
-        // optionally close the levels page if it's a separate window
-        // window.close();
         return true;
       }
       if (window.parent && window.parent !== window && typeof window.parent.startLevel === 'function') {
         window.parent.startLevel(level);
         return true;
       }
-    } catch (e) {
-      // cross-origin or other; fall through
-    }
+    } catch (e) {}
     return false;
   }
 
@@ -68,12 +152,10 @@
 
   // Back / Settings / Upgrade
   bindButton('btn-back', () => {
-    // If opener exists, try to call a 'showScreen' method or just focus parent
     try {
       if (window.opener && typeof window.opener.showScreen === 'function') { window.opener.showScreen('title'); window.close(); return; }
       if (window.parent && window.parent !== window && typeof window.parent.showScreen === 'function') { window.parent.showScreen('title'); return; }
-    } catch (e) { /* ignore cross-origin */ }
-    // fallback: just go back in history
+    } catch (e) { }
     if (history.length > 1) history.back();
   });
 
