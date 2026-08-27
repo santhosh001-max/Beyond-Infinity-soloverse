@@ -105,6 +105,25 @@
   visibility: visible !important;
 }
 
+/* Added explicit stacking and debug helpers to make frame-hotspots sit above frame art */
+.frame-photo-wrap img {
+  position: relative !important;
+  z-index: 0 !important;
+}
+
+.frame-photo-wrap .frame-hotspot {
+  position: absolute !important;
+  z-index: 2 !important;
+  background: transparent !important;
+  pointer-events: auto !important;
+}
+
+/* Temporary visual debug outline - toggle by adding the class 'debug-visible' in DevTools */
+.frame-hotspot.debug-visible {
+  background: rgba(255,0,0,0.12) !important;
+  outline: 2px dashed rgba(255,0,0,0.7) !important;
+}
+
 /* Debug helpers - uncomment during development only */
 /*
 #game-container { outline: 1px dashed rgba(255,255,255,0.04); }
