@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Levels - Beyond Infinity</title>
+  <link rel="stylesheet" href="../css/levels-screen.css">
+</head>
+<body>
+  <!-- Levels Screen with Background -->
+  <div class="levels-screen">
+    <div class="levels-content">
+      <h1>Select Your Level</h1>
+      
+      <!-- Level Buttons/Cards -->
+      <div class="levels-grid">
+        <button class="level-btn" onclick="startLevel(1)">
+          <span>Level 1</span>
+        </button>
+        <button class="level-btn" onclick="startLevel(2)">
+          <span>Level 2</span>
+        </button>
+        <button class="level-btn" onclick="startLevel(3)">
+          <span>Level 3</span>
+        </button>
+        <!-- Add more levels as needed -->
+      </div>
+
+      <button class="back-btn" onclick="goBack()">Back to Menu</button>
+    </div>
+  </div>
+
+  <script src="../js/levels.js"></script>
+</body>
+</html>
