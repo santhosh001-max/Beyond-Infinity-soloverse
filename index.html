@@ -18,7 +18,7 @@
         <div class="loading-track" style="left:19.5%;top:87.0%;width:60.6%;height:4.0%;">
           <div id="loading-fill"></div>
         </div>
-        <div id="loading-percent" style="left:19.5%;top:92.0%;width:60.6%;height:5%;">0%</div>
+        <div id="loading-percent" style="left:19.5%;top:92.0%;width:60.6%;height:5%">0%</div>
       </div>
     </div>
 
@@ -192,5 +192,93 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
   <script src="game.js"></script>
+
+  <!-- Temporary hotspot debug UI -->
+  <style id="hotspot-log-style">
+    #hotspot-log { position: fixed; right: 12px; top: 12px; width: 380px; max-height: 62vh; overflow: auto; background: rgba(2,10,20,0.92); color: #bdf1ff; border: 1px solid rgba(0,200,255,0.18); padding: 10px; z-index: 99999; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace; font-size: 12px; border-radius: 8px; }
+    #hotspot-log h4 { margin: 0 0 8px 0; font-size: 13px; }
+    #hotspot-log button { margin-right: 6px; font-size: 12px; }
+    #hotspot-log pre { white-space: pre-wrap; word-break: break-word; margin-top: 8px; }
+    #hotspot-log.hidden { display: none !important; }
+  </style>
+  <div id="hotspot-log" class="hidden" aria-hidden="true">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+      <h4>Hotspot Inspector</h4>
+      <div>
+        <button id="hotspot-scan">Scan</button>
+        <button id="hotspot-toggle-visual">Toggle Visual</button>
+        <button id="hotspot-copy">Copy</button>
+        <button id="hotspot-close">✖</button>
+      </div>
+    </div>
+    <div id="hotspot-summary" style="margin-top:6px;color:#9ad8ff;">Found: <span id="hotspot-count">0</span></div>
+    <pre id="hotspot-list" style="margin-top:8px;">(no data)</pre>
+  </div>
+  <script>
+    (function(){
+      const log = document.getElementById('hotspot-log');
+      const scanBtn = document.getElementById('hotspot-scan');
+      const copyBtn = document.getElementById('hotspot-copy');
+      const closeBtn = document.getElementById('hotspot-close');
+      const toggleVisual = document.getElementById('hotspot-toggle-visual');
+      const listPre = document.getElementById('hotspot-list');
+      const countEl = document.getElementById('hotspot-count');
+
+      function scanHotspots(){
+        const nodes = Array.from(document.querySelectorAll('.frame-hotspot, .title-hotspot'));
+        const results = nodes.map(el=>{
+          const r = el.getBoundingClientRect();
+          const cs = getComputedStyle(el);
+          return {
+            id: el.id || null,
+            title: el.title || null,
+            style: el.getAttribute('style') || null,
+            left: Math.round(r.left), top: Math.round(r.top), width: Math.round(r.width), height: Math.round(r.height),
+            visible: cs.display !== 'none' && cs.visibility !== 'hidden' && r.width>0 && r.height>0
+          };
+        });
+        countEl.textContent = results.length;
+        if(results.length===0) listPre.textContent = '(no hotspots found)';
+        else listPre.textContent = results.map((r,i)=>{
+          return `${i+1}. id=${r.id} title=${r.title} style=${r.style} \n   rect={left:${r.left},top:${r.top},w:${r.width},h:${r.height}} visible=${r.visible}`;
+        }).join('\n\n');
+        console.log('Hotspot scan:', results);
+        return results;
+      }
+
+      scanBtn.onclick = scanHotspots;
+      closeBtn.onclick = ()=>{ log.classList.add('hidden'); log.setAttribute('aria-hidden','true'); };
+      copyBtn.onclick = ()=>{
+        const txt = listPre.textContent;
+        navigator.clipboard && navigator.clipboard.writeText(txt).then(()=>{
+          copyBtn.textContent = 'Copied';
+          setTimeout(()=>copyBtn.textContent='Copy',900);
+        }, ()=>{ alert('Copy failed - please use console or select+copy manually.'); });
+      };
+
+      let visualOn = false;
+      toggleVisual.onclick = ()=>{
+        visualOn = !visualOn;
+        document.querySelectorAll('.frame-hotspot, .title-hotspot').forEach(b=>{
+          if(visualOn) b.classList.add('debug-visible'); else b.classList.remove('debug-visible');
+        });
+        toggleVisual.textContent = visualOn ? 'Hide Visual' : 'Toggle Visual';
+      };
+
+      // Keyboard shortcut: Ctrl+H toggles panel
+      window.addEventListener('keydown', (e)=>{
+        if(e.ctrlKey && e.key.toLowerCase()==='h'){
+          if(log.classList.contains('hidden')){ log.classList.remove('hidden'); log.setAttribute('aria-hidden','false'); scanHotspots(); }
+          else { log.classList.add('hidden'); log.setAttribute('aria-hidden','true'); }
+        }
+      });
+
+      // Expose helper for console use
+      window.hotspotInspector = {scan: scanHotspots};
+
+      // If you want the panel visible by default while debugging, uncomment:
+      // log.classList.remove('hidden'); scanHotspots();
+    })();
+  </script>
 </body>
 </html>
